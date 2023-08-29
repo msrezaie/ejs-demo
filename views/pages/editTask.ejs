@@ -12,14 +12,19 @@
   </header>
 
   <main>
+    <p>
+      <%= message %>
+    </p>
     <form action=<%= "/tasks/update/" + task.id %> method="post">
       <label for="name">Name:</label> <br>
       <input name="name" value="<%=task.name %>"><br>
-      <label for="complete-checkbox">Completed: </label>
-      <input type="checkbox" name="isTaskComplete" 
-          id="complete-checkbox" value="true" 
-          <%= task.completed ? "checked" : "" %> ><br><br>
-       <button type="submit">Update</button>
+      <label for="complete">Completed: </label>
+      <% if (task.completed) { %>
+        <input type="checkbox" name="complete" value="true" checked><br><br>
+        <% } else { %>
+          <input type="checkbox" name="complete" value="false"><br><br>
+          <% } %>
+            <button type="submit">Update</button>
     </form>
     </div>
   </main>

@@ -6,16 +6,21 @@ const addTask = (req, res) => {
 
 const createTask = async (req, res) => {
   try {
-    if (req.body.isTaskComplete === "true") {
+    if (req.body.complete) {
       req.body.completed = true;
     }
     await Task.create(req.body);
-    req.flash("info", "The task was created.");
+    req.session.pendingMessage = "The task was created.";
     res.redirect("/tasks");
   } catch (err) {
     if (err.name === "ValidationError") {
-      req.flash("error", "Validation error.");
-    } else req.flash("error", "Something went wrong.");
+      res.locals.message = Object.values(err.errors)
+        .map((item) => item.message)
+        .join(", ");
+    } else {
+      res.locals.message = "Something went wrong.";
+    }
+    res.render("pages/addTask");
   }
 };
 
@@ -23,14 +28,14 @@ const deleteTask = async (req, res) => {
   try {
     const task = await Task.findByIdAndDelete(req.params.id);
     if (task) {
-      req.flash("info", "deleted task");
+      req.session.pendingMessage = "Task deleted!";
       res.redirect("/tasks");
     } else {
-      req.flash("error", `No task with id ${req.params.id} was found`);
+      req.session.pendingMessage = `No task with id ${req.params.id} was found`;
       res.redirect("/tasks");
     }
   } catch (err) {
-    req.flash("error", "Something went wrong.");
+    req.session.pendingMessage = "Something went wrong.";
     res.redirect("/tasks");
   }
 };
@@ -38,46 +43,37 @@ const deleteTask = async (req, res) => {
 const editTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.id);
-    if (task) {
-      res.render("pages/editTask", { task });
-    } else {
-      req.flash("error", `No task with id ${req.params.id} was found`);
-      res.redirect("/tasks");
-    }
+    res.render("pages/editTask", { task });
   } catch (err) {
-    req.flash("error", "Something went wrong.");
+    req.session.pendingMessage = "Something went wrong.";
     res.redirect("/tasks");
   }
 };
 
 const updateTask = async (req, res) => {
-  let oldTask = false;
+  let task = false;
   try {
-    oldTask = await Task.findById(req.params.id);
-    if (req.body.isTaskComplete === "true") {
+    if (req.body.complete) {
       req.body.completed = true;
-    } else {
-      req.body.completed = false;
     }
-    const task = await Task.findByIdAndUpdate(req.params.id, req.body, {
+    task = await Task.findById(req.params.id);
+    await Task.findByIdAndUpdate(req.params.id, req.body, {
       runValidators: true,
     });
-    if (task) {
-      req.flash("info", "The task was updated.");
-      res.redirect("/tasks");
-    } else {
-      req.flash("error", `No task with id ${req.params.id} was found.`);
-      res.redirect("/tasks");
-    }
+    req.session.pendingMessage = "The task was updated.";
+    res.redirect("/tasks");
   } catch (err) {
     if (err.name === "ValidationError") {
-      req.flash("error", "Validation error.");
+      res.locals.message = Object.values(err.errors)
+        .map((item) => item.message)
+        .join(", ");
     } else {
-      req.flash("error", "Something went wrong.");
+      res.locals.message = "Something went wrong.";
     }
-    if (oldTask) {
-      res.render("pages/editTask", { task: oldTask });
+    if (task) {
+      res.render("pages/editTask", { task });
     } else {
+      req.session.pendingMessage = "Something went wrong.";
       res.redirect("/tasks");
     }
   }
@@ -88,8 +84,8 @@ const getTasks = async (req, res) => {
     const tasks = await Task.find();
     res.render("pages/tasks", { tasks });
   } catch (err) {
-    req.flash("error", "Something went wrong.");
-    res.render("/tasks", { tasks: [] });
+    res.locals.message = "Something went wrong.";
+    res.render("pages/tasks", { tasks: [] });
   }
 };
 

@@ -2,7 +2,6 @@ require("dotenv").config();
 const express = require("express");
 const app = express();
 const session = require("express-session");
-const flash = require("flash");
 
 const connectDB = require("./db/connect");
 const taskRouter = require("./routes/tasks");
@@ -17,9 +16,8 @@ app.use(
     saveUninitialized: true,
   })
 );
-app.use(flash());
 app.use(express.urlencoded({ extended: false }));
-app.use("/tasks", taskRouter);
+app.use("/tasks", setMessage, taskRouter);
 
 // use res.render to load up an ejs view file
 
